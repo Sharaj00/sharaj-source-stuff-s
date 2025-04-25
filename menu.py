@@ -7,9 +7,12 @@ from .operators.deselect_biped import DeselectBipedOperator
 from .operators.bone_move import BoneMoveOperator
 from .operators.bone_adjust import BoneAdjustOperator
 
-from .operators.generate_jigglebones import GenerateJigglebonesSet1Operator
-from .operators.generate_jigglebones import GenerateJigglebonesSet2Operator
-from .operators.generate_jigglebones import GenerateJigglebonesToClipboardOperator
+from .operators.generate_jigglebones import (
+    GenerateJigglebonesSet1Operator,
+    GenerateJigglebonesSet2Operator,
+    GenerateJigglebonesToClipboardOperator
+)
+
 from .operators.generate_qc import GenerateQCOperator
 from .operators.bodygroup_to_clipboard import BodygroupToClipboardOperator
 
@@ -21,15 +24,9 @@ from .operators.proportion_trick import (
 
 from .operators.export_selected_bones import ExportSelectedBonesOperator
 
-from .operators.eye_qc import (
-    SSS_OT_SetEyeLeft,
-    SSS_OT_SetEyeRight,
-    SSS_OT_GenerateEyesQC
-)
-
-class SSS_panel(bpy.types.Panel):
+class SSS_main_panel(bpy.types.Panel):
     bl_label = "some stuff's"
-    bl_idname = "SSS_panel"
+    bl_idname = "SSS_main_panel"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = 'SSS'
@@ -86,31 +83,8 @@ class SSS_panel(bpy.types.Panel):
         else:
             layout.label(text="Select armature to start proportion trick.")
 
-
-class SSS_eyes(bpy.types.Panel):
-    bl_label = "eyes stuff's"
-    bl_idname = "SSS_eyes"
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
-    bl_category = 'SSS'
-    def draw(self, context):
-        layout = self.layout
-        wm = context.window_manager
-        col = layout.column(align=True)
-    
-        col.prop(wm, "eye_left_coord", text="Left Eye XYZ")
-        col.operator("sss.set_eye_left", text="Set from 3D Cursor")
-        col.prop(wm, "eye_left_material", text="Material")
-
-        col.prop(wm, "eye_right_coord", text="Right Eye XYZ")
-        col.operator("sss.set_eye_right", text="Set from 3D Cursor")
-        col.prop(wm, "eye_right_material", text="Material")
-        
-        col.operator("sss.generate_eyes_qc", text="Generate")
-
 def register():
-    bpy.utils.register_class(SSS_panel)
-    bpy.utils.register_class(SSS_eyes)
+    bpy.utils.register_class(SSS_main_panel)
 
     bpy.utils.register_class(WM_OT_create_vmt)
     bpy.utils.register_class(RenameTexturesOperator)
@@ -164,36 +138,9 @@ def register():
     )
     
     bpy.types.WindowManager.script_executed = bpy.props.BoolProperty(default=False)
-
-    bpy.utils.register_class(SSS_OT_SetEyeLeft)
-    bpy.utils.register_class(SSS_OT_SetEyeRight)
-    bpy.utils.register_class(SSS_OT_GenerateEyesQC)
-
-    bpy.types.WindowManager.eye_left_coord = bpy.props.FloatVectorProperty(
-        name="Left Eye", subtype='XYZ', size=3, default=(0.0, 0.0, 0.0)
-    )
-    bpy.types.WindowManager.eye_right_coord = bpy.props.FloatVectorProperty(
-        name="Right Eye", subtype='XYZ', size=3, default=(0.0, 0.0, 0.0)
-    )
     
-    def get_materials(self, context):
-        return [(mat.name, mat.name, "") for mat in bpy.data.materials]
-        
-    bpy.types.WindowManager.eye_left_material = bpy.props.EnumProperty(
-        name="Left Eye Material",
-        description="Material name for left eye",
-        items=get_materials
-    )
-    bpy.types.WindowManager.eye_right_material = bpy.props.EnumProperty(
-        name="Right Eye Material",
-        description="Material name for right eye",
-        items=get_materials
-    )
-
-
 def unregister():
-    bpy.utils.unregister_class(SSS_panel)
-    bpy.utils.unregister_class(SSS_eyes)
+    bpy.utils.unregister_class(SSS_main_panel)
     
     bpy.utils.unregister_class(WM_OT_create_vmt)
     bpy.utils.unregister_class(RenameTexturesOperator)
@@ -221,13 +168,3 @@ def unregister():
     del bpy.types.WindowManager.vmt_nocull
     del bpy.types.WindowManager.script_executed
     del bpy.types.WindowManager.is_male
-
-    bpy.utils.unregister_class(SSS_OT_SetEyeLeft)
-    bpy.utils.unregister_class(SSS_OT_SetEyeRight)
-    bpy.utils.unregister_class(SSS_OT_GenerateEyesQC)
-    
-    del bpy.types.WindowManager.eye_left_coord
-    del bpy.types.WindowManager.eye_right_coord
-    
-    del bpy.types.WindowManager.eye_left_material
-    del bpy.types.WindowManager.eye_right_material
