@@ -19,6 +19,9 @@ a set of vibe-coded scripts for working with Source Engine models in Blender 4.0
   - Base color and normal maps
   - Emission enabling (WIP)
   - Fake gloss using `phong` (WIP)
+  - 
+- **Eye Tools (WIP)**  
+  - Generate configuration for eyes based on pasted XYZ coordinates for L/R eye
 
 - **QC Tools (WIP)**  
   Some useless utilities for generating QC files
@@ -29,3 +32,4 @@ a set of vibe-coded scripts for working with Source Engine models in Blender 4.0
 - Better vmt generation with lot of options to enable through panel
 - Generate QC example for playermodel or prop, with bodygroups based on scene collections
 - Better jiggle bones config generaion, or abandoning it in favor of [this](https://github.com/Jakobg1215/srcprocbones) addon
+- Advanced eye configs with eyelid configuration and preview how it will looks directly in Blender
