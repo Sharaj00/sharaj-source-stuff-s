@@ -7,7 +7,7 @@ a set of AI-assisted tools for working with Source Engine models in Blender
 - **Proportion Trick**  
   Launch directly from the N-panel. Just select a suitable armature and press the button
 
-- **Bone Utilities**
+- **Bone Utilities**  
   Some little but usefull scripts for better bone operating
   - Deselect all ValveBiped bones
   - Auto-rotate jiggle bones to face -Z for correct physics behavior
