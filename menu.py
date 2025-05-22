@@ -24,6 +24,8 @@ from .operators.proportion_trick import (
 
 from .operators.export_selected_bones import ExportSelectedBonesOperator
 
+from .operators.copy_transforms_from_selected import CopyTransformsFromSelectedOperator
+
 class SSS_main_panel(bpy.types.Panel):
     bl_label = "some stuff's"
     bl_idname = "SSS_main_panel"
@@ -72,6 +74,13 @@ class SSS_main_panel(bpy.types.Panel):
         layout.separator()
         layout.operator(GenerateQCOperator.bl_idname, text="Generate .qc for props")
         layout.operator(BodygroupToClipboardOperator.bl_idname, text="Bodygroups to clipboard")
+        
+        layout.label(text="Copy Transforms Setup:")
+        row = layout.row(align=True)
+        row.prop(wm, "sss_target_armature", text="To")
+        row.prop(wm, "sss_source_armature", text="From")
+        layout.operator("object.copy_transforms_from_selected", text="Copy Transforms")
+        
         layout.separator()
         if wm.script_executed:
             layout.operator("object.continue", text="Continue")
@@ -139,6 +148,20 @@ def register():
     
     bpy.types.WindowManager.script_executed = bpy.props.BoolProperty(default=False)
     
+    bpy.utils.register_class(CopyTransformsFromSelectedOperator)
+    
+    bpy.types.WindowManager.sss_source_armature = bpy.props.PointerProperty(
+        name="Source Armature",
+        type=bpy.types.Object,
+        poll=lambda self, obj: obj.type == 'ARMATURE'
+    )
+    bpy.types.WindowManager.sss_target_armature = bpy.props.PointerProperty(
+        name="Target Armature",
+        type=bpy.types.Object,
+        poll=lambda self, obj: obj.type == 'ARMATURE'
+    )
+
+    
 def unregister():
     bpy.utils.unregister_class(SSS_main_panel)
     
@@ -168,3 +191,6 @@ def unregister():
     del bpy.types.WindowManager.vmt_nocull
     del bpy.types.WindowManager.script_executed
     del bpy.types.WindowManager.is_male
+    
+    del bpy.types.WindowManager.sss_source_armature
+    del bpy.types.WindowManager.sss_target_armature
