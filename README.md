@@ -15,8 +15,9 @@ a set of vibe-coded scripts for working with Source Engine models in Blender 4.0
   - Generate LOD merge configuration
 
 - **VMT Tools**  
-  Create material files based on `Principled BSDF` settings:
+  Generate .vmt's based on `Principled BSDF` settings for all materials in .blend file:
   - Base color and normal maps
+  - Alpha enabing
   - Emission enabling (WIP)
   - Fake gloss using `phong` (WIP)
 
