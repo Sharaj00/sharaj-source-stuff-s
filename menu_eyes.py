@@ -7,7 +7,7 @@ from .operators.eye_qc import (
 )
 
 class SSS_PT_eyes_panel(bpy.types.Panel):
-    bl_label = "eyes stuff's"
+    bl_label = "eyes tools"
     bl_idname = "SSS_PT_eyes_panel"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
