@@ -4,7 +4,7 @@ a set of AI-assisted tools for working with Source Engine models in Blender
 
 ## Features
 
-- **Proportion Trick**  
+- **[Proportion Trick](https://github.com/sksh70/proportion_trick_script)**  
   Launch directly from the N-panel. Just select a suitable armature and press the button
 
 - **Bone Utilities**  
@@ -22,3 +22,10 @@ a set of AI-assisted tools for working with Source Engine models in Blender
 
 - **QC Tools (WIP)**  
   Some useless utilities for generating QC files
+
+
+## TODO
+
+- Better vmt generation with lot of options to enable through panel
+- Generate QC example for playermodel or prop, with bodygroups based on scene collections
+- Better jiggle bones config generaion, or abandoning it in favor of [this](https://github.com/Jakobg1215/srcprocbones) addon
