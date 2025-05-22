@@ -75,7 +75,6 @@ class SSS_main_panel(bpy.types.Panel):
         layout.operator(GenerateQCOperator.bl_idname, text="Generate .qc for props")
         layout.operator(BodygroupToClipboardOperator.bl_idname, text="Bodygroups to clipboard")
         
-        layout.label(text="Copy Transforms Setup:")
         row = layout.row(align=True)
         row.prop(wm, "sss_target_armature", text="To")
         row.prop(wm, "sss_source_armature", text="From")
