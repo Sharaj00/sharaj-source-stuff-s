@@ -1,6 +1,6 @@
 # sharaj source stuff's
 
-a set of vibe-coded scripts for working with Source Engine models in Blender
+a set of vibe-coded scripts for working with Source Engine models in Blender 4.0+ (not guaranteed to work on older versions)
 
 ## Features
 
