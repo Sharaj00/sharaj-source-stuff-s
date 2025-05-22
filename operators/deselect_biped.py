@@ -3,6 +3,7 @@ import bpy
 class DeselectBipedOperator(bpy.types.Operator):
     bl_idname = "object.deselect_biped"
     bl_label = "Deselect Valve.Biped"
+    bl_description = "Deselect all bones that involved in Source animations"
     bl_options = {'REGISTER', 'UNDO'}
     
     def execute(self, context):
@@ -61,7 +62,19 @@ class DeselectBipedOperator(bpy.types.Operator):
             'ValveBiped.Bip01_L_Finger32',
             'ValveBiped.Bip01_L_Finger4',
             'ValveBiped.Bip01_L_Finger41',
-            'ValveBiped.Bip01_L_Finger42'
+            'ValveBiped.Bip01_L_Finger42',
+            'ValveBiped.forward',
+            'ValveBiped.weapon_hand_R',
+            'ValveBiped.weapon_hand_L',
+            'ValveBiped.weapon_bone',
+            'ValveBiped.Bip01_R_Ulna',
+            'ValveBiped.Bip01_L_Ulna',
+            'ValveBiped.Bip01_L_ForeTwist',
+            'ValveBiped.Bip01_R_ForeTwist',
+            'ValveBiped.Bip01_L_Elbow',
+            'ValveBiped.Bip01_R_Elbow',
+            'ValveBiped.Bip01_L_Hand_Twist',
+            'ValveBiped.Bip01_R_Hand_Twist'
         ]
 
         if active_object and active_object.type == 'ARMATURE':

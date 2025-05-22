@@ -2,13 +2,13 @@ import bpy
 
 class CopyTransformsFromSelectedOperator(bpy.types.Operator):
     bl_idname = "object.copy_transforms_from_selected"
-    bl_label = "Copy Transforms Between Armatures"
+    bl_label = "Copy transforms from one armature to another"
     bl_description = "Copy transforms from source armature to target armature"
 
     def execute(self, context):
         wm = context.window_manager
-        source = wm.sss_source_armature
-        target = wm.sss_target_armature
+        source = wm.source_armature
+        target = wm.target_armature
 
         if not source or not target:
             self.report({'ERROR'}, "Both source and target armatures must be set")
