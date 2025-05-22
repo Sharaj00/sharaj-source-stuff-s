@@ -5,7 +5,7 @@ a set of AI-assisted tools for working with Source Engine models in Blender
 ## Features
 
 - **Proportion Trick**  
-  Launch directly from the N-panel. Just select a suitable armature and press the button
+  - Launch directly from the N-panel. Just select a suitable armature and press the button
 
 - **Bone Utilities**
   - Deselect all ValveBiped bones
