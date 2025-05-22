@@ -7,25 +7,24 @@ a set of vibe-coded scripts for working with Source Engine models in Blender 4.0
 - **[Proportion Trick](https://github.com/sksh70/proportion_trick_script)**  
   Launch directly from the N-panel. Just select a suitable armature and press the button
 
-- **Bone Utilities**  
+- **Bone Tools**  
   Some little but usefull scripts for better bone operating
   - Deselect all ValveBiped bones
   - Auto-rotate jiggle bones to face -Z for correct physics behavior
   - Point jiggle bones at the 3D cursor (for pitch-limited config)
   - Generate LOD merge configuration
 
-- **VMT Generator**  
+- **VMT Tools**  
   Create material files based on `Principled BSDF` settings:
   - Base color and normal maps
   - Emission enabling (WIP)
   - Fake gloss using `phong` (WIP)
-  - 
+
 - **Eye Tools (WIP)**  
   - Generate configuration for eyes based on pasted XYZ coordinates for L/R eye
 
 - **QC Tools (WIP)**  
   Some useless utilities for generating QC files
-
 
 ## TODO
 
