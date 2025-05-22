@@ -1,6 +1,6 @@
 # sharaj source stuff's
 
-a set of AI-assisted tools for working with Source Engine models in Blender
+a set of AI-generated scripts for working with Source Engine models in Blender
 
 ## Features
 
