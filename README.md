@@ -9,6 +9,7 @@ a set of vibe-coded scripts for working with Source Engine models in Blender 4.0
 
 - **Bone Tools**  
   Some little but usefull scripts for better bone operating
+  - Batch bone renaming with auto recognition (simply checks the names of bones if they correspond to at least one of skeleton standart specified in the script)
   - Deselect all ValveBiped bones
   - Auto-rotate jiggle bones to face -Z for correct physics behavior
   - Point jiggle bones at the 3D cursor (for pitch-limited config)
