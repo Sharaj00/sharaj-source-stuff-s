@@ -21,6 +21,7 @@ a set of vibe-coded scripts for working with Source Engine models in Blender 4.0
   - Alpha enabing
   - Emission enabling (WIP)
   - Fake gloss using `phong` (WIP)
+  Convert all textures that used in materials into .vtf with one click(support alpha - auto DXT1/DXT5, auto normal map merging with phong mask)
 
 - **Eye Tools (WIP)**  
   - Generate configuration for eyes based on pasted XYZ coordinates for L/R eye
