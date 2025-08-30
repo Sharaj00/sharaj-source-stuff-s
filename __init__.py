@@ -1,7 +1,7 @@
 bl_info = {
     "name": "sharaj source stuff's",
     "author": "sharaj00",
-    "version": (1, 6, 0),
+    "version": (1, 6, 1),
     "blender": (4, 50, 0),
     "category": "Object",
     "description": "some tools for working with source models",
@@ -29,4 +29,3 @@ def unregister():
     menu_materials.unregister()
     menu_qc.unregister()
     menu_bonerenamer.unregister()
-
