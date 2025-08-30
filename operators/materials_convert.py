@@ -3,11 +3,11 @@ import os
 import subprocess
 import threading
 from bpy.types import Operator
+from bpy.props import BoolProperty
 from PIL import Image
 from queue import Queue
-import tempfile
 
-def run_vtfcmd(input_path, output_dir, fmt, out_name=None, flags=None, errors=None):
+def run_vtfcmd(input_path, output_dir, fmt, flags=None, errors=None):
     try:
         addon_dir = os.path.dirname(os.path.dirname(__file__))
         vtfcmd_path = os.path.join(addon_dir, "operators", "VTFCmd.exe")
@@ -45,17 +45,13 @@ class ConvertMaterialsOperator(Operator):
     bl_idname = "wm.convert_materials_to_vtf"
     bl_label = "Convert Materials to VTF"
 
-    cancel: bpy.props.BoolProperty(default=False)
+    cancel: BoolProperty(default=False)
 
     _thread = None
     _queue = None
 
     def execute(self, context):
         wm = context.window_manager
-        if wm.conversion_running:
-            self.cancel = True
-            return {'RUNNING_MODAL'}
-
         wm.conversion_running = True
         wm.conversion_progress = 0
         wm.conversion_log = ""
@@ -70,7 +66,7 @@ class ConvertMaterialsOperator(Operator):
         max_height = int(wm.texture_max_height)
         tasks = []
 
-        # Собираем задачи
+        # Собираем задачи по материалам
         for mat in bpy.data.materials:
             if not mat.use_nodes:
                 continue
@@ -91,18 +87,13 @@ class ConvertMaterialsOperator(Operator):
                 if normal_node.type == "NORMAL_MAP" and normal_node.inputs["Color"].is_linked:
                     tex_node = normal_node.inputs["Color"].links[0].from_node
                     if tex_node.type == "TEX_IMAGE" and tex_node.image:
-                        rough_img = None
-                        if bsdf.inputs["Roughness"].is_linked:
-                            rough_node = bsdf.inputs["Roughness"].links[0].from_node
-                            if rough_node.type == "TEX_IMAGE" and rough_node.image:
-                                rough_img = rough_node.image
-                        tasks.append(('Normal', tex_node.image, rough_img))
+                        tasks.append(('Normal', tex_node.image, bsdf))
 
             # Emission
-            if "Emission" in bsdf.inputs and bsdf.inputs["Emission"].is_linked:
-                tex_node = bsdf.inputs["Emission"].links[0].from_node
+            if bsdf.inputs["Emission Color"].is_linked:
+                tex_node = bsdf.inputs["Emission Color"].links[0].from_node
                 if tex_node.type == "TEX_IMAGE" and tex_node.image:
-                    tasks.append(('Emission', tex_node.image))
+                    tasks.append(('Emission', tex_node.image, bsdf))
 
         self._queue = Queue()
         errors = []
@@ -113,72 +104,43 @@ class ConvertMaterialsOperator(Operator):
                 if self.cancel:
                     self._queue.put((wm.conversion_progress, "Conversion canceled", ""))
                     break
-
                 try:
                     img = task[1]
                     img_name = os.path.basename(bpy.path.abspath(img.filepath))
                     wm.current_texture = f"{idx}/{total}: {img_name}"
                     self._queue.put((int(idx/total*100), f"Processing {img_name}", wm.current_texture))
 
+                    # Base Color
                     if task[0] == 'Base Color':
                         img_path = bpy.path.abspath(img.filepath)
                         resize_texture(img_path, max_height)
+                        fmt = "DXT5" if img.has_data and img.depth == 32 else "DXT1"
+                        run_vtfcmd(img_path, out_dir, fmt, errors=errors)
 
-                        # Определяем, используется ли альфа
-                        alpha_used = False
-                        tex_node = bsdf.inputs["Base Color"].links[0].from_node
-                        if tex_node.type == "TEX_IMAGE" and tex_node.image:
-                            for link in tex_node.outputs['Alpha'].links:
-                                if link.to_socket in bsdf.inputs.values():
-                                    alpha_used = True
-                                    break
-
-                        fmt = "DXT5" if alpha_used else "DXT1"
-
-                        if self.cancel:
-                            break
-
-                        run_vtfcmd(img_path, out_dir, fmt, out_name=os.path.basename(img_path), errors=errors)
-
-
+                    # Normal + Roughness
                     elif task[0] == 'Normal':
+                        bsdf = task[2]
                         normal_path = bpy.path.abspath(img.filepath)
                         resize_texture(normal_path, max_height)
-                        temp_file = None
-                        try:
-                            if task[2]:
-                                rough_path = bpy.path.abspath(task[2].filepath)
+                        fmt = "DXT5" if img.has_data and img.depth == 32 else "DXT1"
+
+                        # Roughness в альфу
+                        if bsdf.inputs["Roughness"].is_linked:
+                            rough_node = bsdf.inputs["Roughness"].links[0].from_node
+                            if rough_node.type == "TEX_IMAGE" and rough_node.image:
+                                rough_path = bpy.path.abspath(rough_node.image.filepath)
                                 resize_texture(rough_path, max_height)
-                                temp_file = os.path.join(tempfile.gettempdir(), os.path.basename(normal_path))
-                                combine_normal_roughness(normal_path, rough_path, temp_file)
-                                normal_to_convert = temp_file
-                            else:
-                                normal_to_convert = normal_path
+                                combine_normal_roughness(normal_path, rough_path, normal_path)
+                                run_vtfcmd(rough_path, out_dir, "DXT1", errors=errors)
 
-                            fmt = "DXT5" if img.channels == 4 else "DXT1"
+                        run_vtfcmd(normal_path, out_dir, fmt, flags=["Normal"], errors=errors)
 
-                            if self.cancel:
-                                break
-
-                            # Запускаем vtfcmd на временном файле с оригинальным именем нормали
-                            run_vtfcmd(normal_to_convert, out_dir, fmt, out_name=os.path.basename(normal_path), flags=["Normal"], errors=errors)
-
-                            # Конвертация roughness для Phong отдельно
-                            if task[2] and not self.cancel:
-                                rough_name = os.path.basename(rough_path)
-                                run_vtfcmd(rough_path, out_dir, "DXT1", out_name=rough_name, errors=errors)
-
-                        finally:
-                            if temp_file and os.path.exists(temp_file):
-                                os.remove(temp_file)
-
-
+                    # Emission
                     elif task[0] == 'Emission':
+                        bsdf = task[2]
                         img_path = bpy.path.abspath(img.filepath)
                         resize_texture(img_path, max_height)
-                        if self.cancel:
-                            break
-                        run_vtfcmd(img_path, out_dir, "DXT1", out_name=img_name, errors=errors)
+                        run_vtfcmd(img_path, out_dir, "DXT1", errors=errors)
 
                 except Exception as e:
                     errors.append(f"Unexpected error: {e}")
