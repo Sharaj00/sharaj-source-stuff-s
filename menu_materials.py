@@ -1,6 +1,6 @@
 import bpy
 
-from .operators.create_vmt import WM_OT_create_vmt
+from .operators.generate_vmt import WM_OT_generate_vmt
 from .operators.rename_textures import RenameTexturesOperator
 from .operators.materials_convert import ConvertMaterialsOperator
 
@@ -27,31 +27,26 @@ class SSS_PT_materials_panel(bpy.types.Panel):
         layout.prop(wm, "vmt_path")
         layout.prop(wm, "vmt_lightwarp")
 
-        row = layout.row()
-        row.prop(wm, "vmt_halflambert", text="Halflambert")
-        row.prop(wm, "vmt_nocull", text="NoCull")
+        layout.operator("wm.generate_vmt", text="Generate VMT")
 
-        layout.operator(WM_OT_create_vmt.bl_idname)
         layout.operator(RenameTexturesOperator.bl_idname, text="Rename Textures")
 
         layout.separator()
         
         layout.prop(wm, "texture_max_height", text="Resolution")
 
-        # Кнопка запуска или отмены
         if not wm.conversion_running:
             layout.operator(ConvertMaterialsOperator.bl_idname, text="Convert to VTF")
         else:
             op = layout.operator(ConvertMaterialsOperator.bl_idname, text="Cancel Conversion")
             op.cancel = True
 
-        # Прогресс бар
         layout.label(text=f"{wm.conversion_progress}% - {wm.current_texture}")
         layout.label(text=wm.conversion_log)
 
 
+
 def register():
-    # 1. Свойства WindowManager
     bpy.types.WindowManager.output_path = bpy.props.StringProperty(
         name="Path to addon",
         description="Absolute path (Leave // for relative to .blend)",
@@ -67,16 +62,6 @@ def register():
         name="Lightwarp",
         description="Lightwarp texture name",
         default=""
-    )
-    bpy.types.WindowManager.vmt_halflambert = bpy.props.BoolProperty(
-        name="Halflambert",
-        description="Enable halflambert",
-        default=False
-    )
-    bpy.types.WindowManager.vmt_nocull = bpy.props.BoolProperty(
-        name="NoCull",
-        description="Disable culling",
-        default=False
     )
     bpy.types.WindowManager.texture_max_height = bpy.props.EnumProperty(
         name="Max Texture Height",
@@ -94,28 +79,22 @@ def register():
     bpy.types.WindowManager.current_texture = bpy.props.StringProperty(default="")
     bpy.types.WindowManager.conversion_running = bpy.props.BoolProperty(default=False)
 
-    # 2. Регистрируем все операторы
     bpy.utils.register_class(ConvertMaterialsOperator)
-    bpy.utils.register_class(WM_OT_create_vmt)
+    bpy.utils.register_class(WM_OT_generate_vmt)
     bpy.utils.register_class(RenameTexturesOperator)
 
-    # 3. Регистрируем панели
     bpy.utils.register_class(SSS_PT_materials_panel)
 
 
 def unregister():
-    # 1. Разрегистрация панелей и операторов
     bpy.utils.unregister_class(SSS_PT_materials_panel)
-    bpy.utils.unregister_class(WM_OT_create_vmt)
+    bpy.utils.unregister_class(WM_OT_generate_vmt)
     bpy.utils.unregister_class(RenameTexturesOperator)
     bpy.utils.unregister_class(ConvertMaterialsOperator)
 
-    # 2. Удаляем свойства WindowManager
     del bpy.types.WindowManager.output_path
     del bpy.types.WindowManager.vmt_path
     del bpy.types.WindowManager.vmt_lightwarp
-    del bpy.types.WindowManager.vmt_halflambert
-    del bpy.types.WindowManager.vmt_nocull
     del bpy.types.WindowManager.texture_max_height
     del bpy.types.WindowManager.conversion_progress
     del bpy.types.WindowManager.conversion_log
