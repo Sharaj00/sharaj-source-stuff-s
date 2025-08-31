@@ -28,10 +28,6 @@ class RenameTexturesOperator(bpy.types.Operator):
                                         messages.extend(self.rename_texture(material, from_node.image, material.name + '_r', blend_dir))
                                     elif input_slot.name == 'Metallic':
                                         messages.extend(self.rename_texture(material, from_node.image, material.name + '_m', blend_dir))
-                                    # elif input_slot.name == 'Alpha':
-                                        # messages.extend(self.rename_texture(material, from_node.image, material.name + '_op', blend_dir))
-                                    elif input_slot.name == 'Subsurface':
-                                        messages.extend(self.rename_texture(material, from_node.image, material.name + '_sss', blend_dir))
                                 elif from_node.type == 'NORMAL_MAP':
                                     normal_map_node = from_node
                                     if normal_map_node.inputs['Color'].is_linked:
