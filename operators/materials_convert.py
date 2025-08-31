@@ -34,11 +34,20 @@ def resize_texture(image_path, max_height):
         img = img.resize(new_size, Image.LANCZOS)
         img.save(image_path)
 
+def invert_grayscale(image_path, save_path=None):
+    img = Image.open(image_path).convert("L")
+    inverted = Image.eval(img, lambda px: 255 - px)
+    if save_path:
+        inverted.save(save_path)
+    return inverted
+
 def combine_normal_roughness(normal_path, rough_path, out_path):
     normal = Image.open(normal_path).convert("RGBA")
-    rough = Image.open(rough_path).convert("L").resize(normal.size, Image.LANCZOS)
+    gloss = invert_grayscale(rough_path)
+    gloss = gloss.resize(normal.size, Image.LANCZOS)
+
     r, g, b, _ = normal.split()
-    combined = Image.merge("RGBA", (r, g, b, rough))
+    combined = Image.merge("RGBA", (r, g, b, gloss))
     combined.save(out_path)
 
 class ConvertMaterialsOperator(Operator):
@@ -46,7 +55,6 @@ class ConvertMaterialsOperator(Operator):
     bl_label = "Convert Materials to VTF"
 
     cancel: BoolProperty(default=False)
-
     _thread = None
     _queue = None
 
@@ -60,40 +68,50 @@ class ConvertMaterialsOperator(Operator):
 
         blend_dir = bpy.path.abspath(wm.output_path)
         vmt_path = wm.vmt_path
-        out_dir = os.path.join(blend_dir, vmt_path)
-        os.makedirs(out_dir, exist_ok=True)
+        rel_output_dir = os.path.join(blend_dir, "materials", vmt_path)
+        os.makedirs(rel_output_dir, exist_ok=True)
 
         max_height = int(wm.texture_max_height)
         tasks = []
 
-        # Собираем задачи по материалам
+        # Собираем задачи
         for mat in bpy.data.materials:
             if not mat.use_nodes:
                 continue
             nt = mat.node_tree
-            bsdf = next((n for n in nt.nodes if n.type == "BSDF_PRINCIPLED"), None)
-            if not bsdf:
+            shader_node = next((n for n in nt.nodes if n.type in {'BSDF_PRINCIPLED', 'EMISSION'}), None)
+            if not shader_node:
                 continue
 
             # Base Color
-            if bsdf.inputs["Base Color"].is_linked:
-                tex_node = bsdf.inputs["Base Color"].links[0].from_node
+            base_input = shader_node.inputs.get("Base Color")
+            if base_input and base_input.is_linked:
+                tex_node = base_input.links[0].from_node
                 if tex_node.type == "TEX_IMAGE" and tex_node.image:
                     tasks.append(('Base Color', tex_node.image))
 
             # Normal + Roughness
-            if bsdf.inputs["Normal"].is_linked:
-                normal_node = bsdf.inputs["Normal"].links[0].from_node
-                if normal_node.type == "NORMAL_MAP" and normal_node.inputs["Color"].is_linked:
+            normal_input = shader_node.inputs.get("Normal")
+            if normal_input and normal_input.is_linked:
+                normal_node = normal_input.links[0].from_node
+                if normal_node.type == "NORMAL_MAP" and normal_node.inputs.get("Color") and normal_node.inputs["Color"].is_linked:
                     tex_node = normal_node.inputs["Color"].links[0].from_node
                     if tex_node.type == "TEX_IMAGE" and tex_node.image:
-                        tasks.append(('Normal', tex_node.image, bsdf))
+                        tasks.append(('Normal', tex_node.image, shader_node))
+
+            # Roughness
+            rough_input = shader_node.inputs.get("Roughness")
+            if rough_input and rough_input.is_linked:
+                rough_node = rough_input.links[0].from_node
+                if rough_node.type == "TEX_IMAGE" and rough_node.image:
+                    tasks.append(('Roughness', rough_node.image, shader_node))
 
             # Emission
-            if bsdf.inputs["Emission Color"].is_linked:
-                tex_node = bsdf.inputs["Emission Color"].links[0].from_node
+            em_input = shader_node.inputs.get("Emission Color")
+            if em_input and em_input.is_linked:
+                tex_node = em_input.links[0].from_node
                 if tex_node.type == "TEX_IMAGE" and tex_node.image:
-                    tasks.append(('Emission', tex_node.image, bsdf))
+                    tasks.append(('Emission', tex_node.image, shader_node))
 
         self._queue = Queue()
         errors = []
@@ -106,48 +124,56 @@ class ConvertMaterialsOperator(Operator):
                     break
                 try:
                     img = task[1]
-                    img_name = os.path.basename(bpy.path.abspath(img.filepath))
-                    wm.current_texture = f"{idx}/{total}: {img_name}"
-                    self._queue.put((int(idx/total*100), f"Processing {img_name}", wm.current_texture))
+                    img_path = bpy.path.abspath(img.filepath)
+                    wm.current_texture = f"{idx}/{total}: {os.path.basename(img_path)}"
+                    self._queue.put((int(idx/total*100), f"Processing {os.path.basename(img_path)}", wm.current_texture))
+                    resize_texture(img_path, max_height)
 
                     # Base Color
                     if task[0] == 'Base Color':
-                        img_path = bpy.path.abspath(img.filepath)
-                        resize_texture(img_path, max_height)
                         fmt = "DXT5" if img.has_data and img.depth == 32 else "DXT1"
-                        run_vtfcmd(img_path, out_dir, fmt, errors=errors)
+                        run_vtfcmd(img_path, rel_output_dir, fmt, errors=errors)
 
                     # Normal + Roughness
                     elif task[0] == 'Normal':
                         bsdf = task[2]
-                        normal_path = bpy.path.abspath(img.filepath)
-                        resize_texture(normal_path, max_height)
+                        normal_path = img_path
                         fmt = "DXT5" if img.has_data and img.depth == 32 else "DXT1"
 
-                        # Roughness в альфу
-                        if bsdf.inputs["Roughness"].is_linked:
-                            rough_node = bsdf.inputs["Roughness"].links[0].from_node
+                        rough_input = bsdf.inputs.get("Roughness")
+                        if rough_input and rough_input.is_linked:
+                            rough_node = rough_input.links[0].from_node
                             if rough_node.type == "TEX_IMAGE" and rough_node.image:
                                 rough_path = bpy.path.abspath(rough_node.image.filepath)
                                 resize_texture(rough_path, max_height)
                                 combine_normal_roughness(normal_path, rough_path, normal_path)
-                                run_vtfcmd(rough_path, out_dir, "DXT1", errors=errors)
+                                run_vtfcmd(rough_path, rel_output_dir, "DXT1", errors=errors)
 
-                        run_vtfcmd(normal_path, out_dir, fmt, flags=["Normal"], errors=errors)
+                        run_vtfcmd(normal_path, rel_output_dir, fmt, flags=["Normal"], errors=errors)
+
+                    # Roughness
+                    elif task[0] == 'Roughness':
+                        rough_path = img_path
+                        temp_phong_png = os.path.join(rel_output_dir, os.path.basename(rough_path))
+                        invert_grayscale(rough_path, temp_phong_png)
+                        run_vtfcmd(temp_phong_png, rel_output_dir, "DXT1", errors=errors)
+                        if os.path.exists(temp_phong_png):
+                            os.remove(temp_phong_png)
 
                     # Emission
                     elif task[0] == 'Emission':
-                        bsdf = task[2]
-                        img_path = bpy.path.abspath(img.filepath)
-                        resize_texture(img_path, max_height)
-                        run_vtfcmd(img_path, out_dir, "DXT1", errors=errors)
+                        fmt = "DXT1"
+                        run_vtfcmd(img_path, rel_output_dir, fmt, errors=errors)
 
                 except Exception as e:
                     errors.append(f"Unexpected error: {e}")
 
             self._queue.put((100, "Conversion finished", ""))
             if errors:
-                self._queue.put((100, "ERRORS: " + "; ".join(errors), ""))
+                print("Errors during conversion:")
+                for err in errors:
+                    print(err)
+                self._queue.put((100, "Conversion finished with errors. See console for details.", ""))
 
         self._thread = threading.Thread(target=worker, daemon=True)
         self._thread.start()
@@ -173,3 +199,9 @@ class ConvertMaterialsOperator(Operator):
             wm.conversion_running = False
             wm.current_texture = ""
             return None
+
+# Функция для внешнего вызова отмены
+def cancel_conversion():
+    for w in bpy.context.window_manager.operators:
+        if isinstance(w, ConvertMaterialsOperator):
+            w.cancel = True
